@@ -16,6 +16,7 @@ let enableWebcamButton;
 let webcamRunning = false;
 const videoHeight = "360px";
 const videoWidth = "480px";
+var prevCategoryName='';
 // Before we can use HandLandmarker class we must wait for it to finish
 // loading. Machine Learning models can be large and take a moment to
 // get everything needed to run.
@@ -23,7 +24,7 @@ const createGestureRecognizer = async () => {
     const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
     gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
         baseOptions: {
-            modelAssetPath: "handGesture.task",
+            modelAssetPath: "handSign.task",
             delegate: "GPU"
         },
         runningMode: runningMode
@@ -145,6 +146,8 @@ function enableCam(event) {
 }
 let lastVideoTime = -1;
 let results = undefined;
+
+
 async function predictWebcam() {
     const webcamElement = document.getElementById("webcam");
     // Now let's start detecting the stream.
@@ -177,6 +180,9 @@ async function predictWebcam() {
         }
     }
     canvasCtx.restore();
+
+    //let speechFlag = false
+    
     if (results.gestures.length > 0) {
         gestureOutput.style.display = "block";
         gestureOutput.style.width = videoWidth;
@@ -184,12 +190,100 @@ async function predictWebcam() {
         const categoryScore = parseFloat(results.gestures[0][0].score * 100).toFixed(2);
         const handedness = results.handednesses[0][0].displayName;
         gestureOutput.innerText = `GestureRecognizer: ${categoryName}\n Confidence: ${categoryScore} %\n Handedness: ${handedness}`;
+    
+        
+        
+
+        if(prevCategoryName != categoryName){
+
+            prevCategoryName = categoryName;
+             // speak text
+            const text = categoryName;
+            const utterance = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(utterance);
+
+            // utterance.addEventListener("end", (event) => {
+
+
+            // });
+
+            if(categoryName == 'Start'){
+                webcamRunning = false;
+                enableWebcamButton.innerText = "DISABLE PREDICTIONS";
+                gestureOutput.innerText = 'Started Listening';
+                speechToTextCustom();
+
+            }
+
+            const myTimeout = setTimeout(function(){
+
+                window.speechSynthesis.cancel();
+
+            }, 700);
+            
+          
+        }else{
+            
+           // window.speechSynthesis.cancel();
+
+        }
+
     }
     else {
+
+       // speechFlag = true;
         gestureOutput.style.display = "none";
     }
     // Call this function again to keep predicting when the browser is ready.
     if (webcamRunning === true) {
         window.requestAnimationFrame(predictWebcam);
     }
+}
+
+
+
+function speechToTextCustom(){
+
+    if('webkitSpeechRecognition' in window) {
+        var speechRecognizer = new webkitSpeechRecognition();
+        speechRecognizer.continuous = false;
+        speechRecognizer.interimResults = true;
+        speechRecognizer.lang = 'en-US';
+        speechRecognizer.start();
+
+        var finalTranscripts = '';
+        var result;
+        speechRecognizer.onresult = function(event) {
+            var interimTranscripts = '';
+            for(var i = event.resultIndex; i < event.results.length; i++){
+                var transcript = event.results[i][0].transcript;
+                transcript.replace("\n", "<br>");
+                if(event.results[i].isFinal) {
+                    finalTranscripts += transcript;
+                    gestureOutput.innerText = 'Completed Listening';
+
+                    const myTimeout = setTimeout(function(){
+
+                        webcamRunning = true;
+                        enableWebcamButton.innerText = "ENABLE PREDICTIONS";
+                        enableCam();
+        
+                    }, 1500);
+                   
+              
+
+                }else{
+                    interimTranscripts += transcript;
+                }
+            }
+            result = document.getElementById('speech_output');
+            //conso
+            result.innerHTML = finalTranscripts + '<span style="color: #999">' + interimTranscripts + '</span>';
+        };
+        speechRecognizer.onerror = function (event) {
+
+        };
+    }else {
+        result.innerHTML = 'Your browser is not supported. Please download Google chrome or Update your Google chrome!!';
+    }	
 }
