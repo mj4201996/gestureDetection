@@ -24,7 +24,7 @@ const createGestureRecognizer = async () => {
     const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
     gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
         baseOptions: {
-            modelAssetPath: "handSign.task",
+            modelAssetPath: "SuBoLo.task",
             delegate: "GPU"
         },
         runningMode: runningMode
@@ -122,6 +122,7 @@ else {
 }
 // Enable the live webcam view and start detection.
 function enableCam(event) {
+    gestureOutput.style.display = "none";
     if (!gestureRecognizer) {
         alert("Please wait for gestureRecognizer to load");
         return;
@@ -232,7 +233,7 @@ async function predictWebcam() {
     else {
 
        // speechFlag = true;
-        gestureOutput.style.display = "none";
+        //gestureOutput.style.display = "none";
     }
     // Call this function again to keep predicting when the browser is ready.
     if (webcamRunning === true) {
@@ -262,13 +263,22 @@ function speechToTextCustom(){
                     finalTranscripts += transcript;
                     gestureOutput.innerText = 'Completed Listening';
 
+                    const myTimeout2 = setTimeout(function(){
+
+                        gestureOutput.innerText = finalTranscripts;
+                        
+        
+                    }, 2000);
+                    
                     const myTimeout = setTimeout(function(){
 
-                        webcamRunning = true;
+                        webcamRunning = false;
                         enableWebcamButton.innerText = "ENABLE PREDICTIONS";
-                        enableCam();
+                        
+                        //enableCam();
         
-                    }, 1500);
+                    }, 2000);
+                   
                    
               
 
